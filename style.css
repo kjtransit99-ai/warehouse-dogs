@@ -1,0 +1,1284 @@
+/* ==========================================================================
+   WAREHOUSE DOGS — 70s Noir Visual System
+   Bar and Coffee Transit (65" TV + Smartphone Sync)
+   ========================================================================== */
+
+:root {
+  --bg-black: #0A0A0A;
+  --bg-concrete: #1A1A1A;
+  --bg-card: #222222;
+  --bg-card-elevated: #2A2A2A;
+  --yellow: #F5C518;
+  --yellow-dim: #C9A010;
+  --red: #D90429;
+  --red-bright: #FF1E42;
+  --red-dark: #7A0216;
+  --white: #F5F2EB;
+  --muted: #8E8C86;
+  --border-hard: #333333;
+
+  --font-display: 'Anton', Impact, 'Arial Black', 'Noto Sans JP', sans-serif;
+  --font-jp: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100%;
+  background-color: var(--bg-black);
+  color: var(--white);
+  font-family: var(--font-jp);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.mode-tv {
+  height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(circle at 30% 20%, #171717 0%, #0A0A0A 65%, #050505 100%);
+}
+
+body.mode-player {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #121212 0%, #0A0A0A 100%);
+  padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================================================
+   Noir Atmospheric Overlays (Strictly BELOW QR z-index: 10000)
+   ========================================================================== */
+.noir-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(0, 0, 0, 0.72) 100%);
+}
+
+.noir-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 901;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9500;
+  opacity: 0;
+  background: var(--white);
+}
+
+.flash-overlay.is-unlocked {
+  animation: unlockedFlash 1.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes unlockedFlash {
+  0% { opacity: 0.98; background: #FFFFFF; }
+  12% { opacity: 0.85; background: var(--yellow); }
+  24% { opacity: 0.95; background: #FFFFFF; }
+  40% { opacity: 0.75; background: var(--red); }
+  58% { opacity: 0.5; background: var(--yellow); }
+  100% { opacity: 0; background: transparent; }
+}
+
+/* ==========================================================================
+   Top-Right Floating Controls (Audio + JP/EN Toggle)
+   ========================================================================== */
+.top-controls {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(20, 20, 20, 0.92);
+  border: 2px solid #444;
+  color: var(--white);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.ctrl-btn:hover {
+  border-color: var(--yellow);
+  background: #252525;
+}
+
+.ctrl-btn:active {
+  transform: scale(0.95);
+}
+
+.lang-opt {
+  color: var(--muted);
+  transition: color 0.15s;
+}
+
+.lang-opt.active {
+  color: var(--yellow);
+}
+
+.lang-sep {
+  color: #555;
+}
+
+.audio-btn {
+  padding: 8px 12px;
+}
+
+.audio-btn.is-muted {
+  color: var(--red);
+  border-color: var(--red-dark);
+}
+
+/* ==========================================================================
+   Hardboiled Title Logo (Slanted -6deg + Glowing Red Slash)
+   ========================================================================== */
+.brand-logo {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  padding-left: 26px;
+  user-select: none;
+}
+
+.brand-logo::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4%;
+  bottom: 6%;
+  width: 11px;
+  background: var(--red);
+  transform: skewX(-12deg);
+  box-shadow: 0 0 18px rgba(217, 4, 41, 0.95), 0 0 38px rgba(217, 4, 41, 0.55);
+}
+
+.brand-title {
+  font-family: var(--font-display);
+  font-size: clamp(3.2rem, 5.8vw, 6.2rem);
+  line-height: 0.92;
+  letter-spacing: 0.03em;
+  transform: skewX(-6deg);
+  display: flex;
+  align-items: baseline;
+  gap: 0.22em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand-title .w-yellow {
+  color: var(--yellow);
+  text-shadow: 0 4px 20px rgba(245, 197, 24, 0.25);
+}
+
+.brand-title .w-red {
+  color: var(--red);
+  text-shadow: 0 4px 22px rgba(217, 4, 41, 0.45);
+}
+
+.brand-sub {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.55vw, 1.7rem);
+  letter-spacing: 0.26em;
+  color: var(--white);
+  margin-top: 6px;
+  padding-left: 4px;
+  opacity: 0.9;
+  text-transform: uppercase;
+}
+
+/* Compact logo for inner screens & smartphone */
+.brand-logo.is-compact {
+  padding-left: 16px;
+}
+
+.brand-logo.is-compact::before {
+  width: 7px;
+  left: 2px;
+}
+
+.brand-logo.is-compact .brand-title {
+  font-size: clamp(1.9rem, 3.2vw, 3.1rem);
+}
+
+.brand-logo.is-compact .brand-sub {
+  font-size: clamp(0.72rem, 1vw, 1rem);
+  letter-spacing: 0.22em;
+  margin-top: 2px;
+}
+
+/* Hardboiled Section Heading */
+.noir-heading {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: skewX(-6deg);
+  display: inline-block;
+  line-height: 1.05;
+}
+
+/* ==========================================================================
+   TV HOST LAYOUT — 65" Screen-Filling Structure
+   ========================================================================== */
+.app-root {
+  width: 100%;
+  min-height: 100%;
+}
+
+.tv-shell {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2.2vh, 32px) clamp(24px, 3vw, 48px);
+  gap: clamp(14px, 1.8vh, 24px);
+  position: relative;
+}
+
+.tv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding-right: 170px; /* space for top-right controls */
+}
+
+/* --- TV LOBBY --- */
+.tv-lobby-main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(320px, 380px) 1fr;
+  gap: clamp(22px, 2.8vw, 48px);
+  align-items: stretch;
+}
+
+.tv-qr-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #171717 0%, #111111 100%);
+  border: 2px solid #2C2C2C;
+  padding: clamp(18px, 2.2vh, 28px);
+  gap: clamp(14px, 1.8vh, 22px);
+  position: relative;
+}
+
+.tv-qr-label {
+  font-size: clamp(1.9rem, 2.5vw, 2.8rem);
+  color: var(--yellow);
+  text-align: center;
+}
+
+.tv-qr-sub {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(1.15rem, 1.5vw, 1.6rem);
+  color: var(--white);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-top: -8px;
+}
+
+/* CRITICAL: QR Code Container — Pure White, 280px, z-index: 10000 */
+.qr-stage {
+  position: relative;
+  z-index: 10000;
+  background: #FFFFFF;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85);
+  border: 4px solid #FFFFFF;
+}
+
+.qr-stage img,
+.qr-stage canvas,
+.qr-stage svg {
+  display: block;
+  width: 270px;
+  height: 270px;
+  image-rendering: pixelated;
+}
+
+/* Right Column: CREW + Genre + Start */
+.tv-crew-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: clamp(12px, 1.6vh, 20px);
+}
+
+.crew-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 3px solid var(--yellow);
+  padding-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.crew-title {
+  font-size: clamp(2.1rem, 3vw, 3.4rem);
+  color: var(--white);
+}
+
+.crew-count {
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 2.6vw, 3rem);
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+}
+
+/* 8-Slot Crew Grid */
+.crew-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: clamp(10px, 1.2vw, 18px);
+}
+
+.crew-card {
+  background: var(--bg-card);
+  border: 2px solid #303030;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(8px, 1.2vh, 14px) 10px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.crew-card.is-empty {
+  background: rgba(24, 24, 24, 0.55);
+  border: 2px dashed #2E2E2E;
+  opacity: 0.55;
+}
+
+.crew-card.is-filled {
+  background: linear-gradient(180deg, #242424 0%, #161616 100%);
+  border-color: #3D3D3D;
+  animation: crewPop 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes crewPop {
+  0% { transform: scale(0.92); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.crew-avatar-wrap {
+  width: clamp(72px, 8.5vh, 124px);
+  height: clamp(72px, 8.5vh, 124px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.crew-avatar-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.crew-codename {
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.05vw, 2.35rem);
+  letter-spacing: 0.05em;
+  line-height: 1.05;
+  margin-top: 6px;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.crew-nickname {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(1.25rem, 1.9vw, 2.15rem);
+  color: var(--white);
+  line-height: 1.15;
+  margin-top: 2px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.crew-empty-label {
+  font-family: var(--font-display);
+  font-size: clamp(1.1rem, 1.5vw, 1.6rem);
+  color: #555;
+  letter-spacing: 0.1em;
+}
+
+.crew-kick-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  background: rgba(10, 10, 10, 0.75);
+  border: 1px solid #444;
+  color: #888;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.crew-card:hover .crew-kick-btn {
+  opacity: 1;
+}
+
+.crew-kick-btn:hover {
+  color: var(--red-bright);
+  border-color: var(--red);
+}
+
+/* Genre Bar & Action Bar */
+.tv-lobby-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.genre-bar {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.genre-btn {
+  background: #1B1B1B;
+  border: 2px solid #353535;
+  color: #BDBAB2;
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(0.95rem, 1.25vw, 1.35rem);
+  padding: clamp(10px, 1.2vh, 14px) 6px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.genre-btn:hover {
+  border-color: var(--yellow);
+  color: var(--white);
+}
+
+.genre-btn.active {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: #0A0A0A;
+  box-shadow: 0 0 20px rgba(245, 197, 24, 0.35);
+}
+
+.lobby-action-row {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+}
+
+/* Primary Noir CTA Buttons */
+.btn-noir {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.btn-noir:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-noir:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  flex: 1;
+  background: var(--red);
+  color: var(--white);
+  font-size: clamp(1.8rem, 2.6vw, 3rem);
+  padding: clamp(14px, 1.8vh, 22px) 28px;
+  box-shadow: 0 6px 28px rgba(217, 4, 41, 0.45);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+  box-shadow: 0 8px 34px rgba(217, 4, 41, 0.65);
+}
+
+.btn-yellow {
+  background: var(--yellow);
+  color: #0A0A0A;
+  font-size: clamp(1.6rem, 2.3vw, 2.7rem);
+  padding: clamp(14px, 1.8vh, 22px) 32px;
+  box-shadow: 0 6px 26px rgba(245, 197, 24, 0.35);
+}
+
+.btn-yellow:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-ghost {
+  background: #1C1C1C;
+  border: 2px solid #444;
+  color: var(--white);
+  font-size: clamp(1.1rem, 1.5vw, 1.65rem);
+  padding: 12px 22px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--yellow);
+  color: var(--yellow);
+}
+
+/* ==========================================================================
+   TV ROLES PHASE (Boss Spotlight Only)
+   ========================================================================== */
+.tv-center-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.6vh, 34px);
+  text-align: center;
+}
+
+.phase-banner {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 3.6vw, 4.2rem);
+  letter-spacing: 0.08em;
+  color: var(--yellow);
+  transform: skewX(-6deg);
+  text-transform: uppercase;
+}
+
+.boss-spotlight {
+  display: flex;
+  align-items: center;
+  gap: clamp(24px, 4vw, 56px);
+  background: linear-gradient(135deg, #222222 0%, #141414 100%);
+  border: 4px solid var(--yellow);
+  padding: clamp(24px, 3.5vh, 44px) clamp(34px, 5vw, 72px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(245, 197, 24, 0.16);
+}
+
+.boss-avatar-lg {
+  width: clamp(140px, 20vh, 230px);
+  height: clamp(140px, 20vh, 230px);
+  flex-shrink: 0;
+}
+
+.boss-avatar-lg svg {
+  width: 100%;
+  height: 100%;
+}
+
+.boss-info {
+  text-align: left;
+}
+
+.boss-tag {
+  display: inline-block;
+  background: var(--yellow);
+  color: #0A0A0A;
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2vw, 2.2rem);
+  letter-spacing: 0.12em;
+  padding: 4px 18px;
+  transform: skewX(-6deg);
+  margin-bottom: 10px;
+}
+
+.boss-codename {
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 5.2vw, 6rem);
+  line-height: 0.98;
+  letter-spacing: 0.04em;
+}
+
+.boss-nickname {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(2.4rem, 4.2vw, 4.8rem);
+  color: var(--white);
+  margin-top: 6px;
+}
+
+.check-phone-prompt {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(1.7rem, 2.6vw, 3rem);
+  color: var(--white);
+  letter-spacing: 0.06em;
+  opacity: 0.92;
+}
+
+/* ==========================================================================
+   TV QUESTIONING PHASE — Screen-Filling Gigantic Timer
+   ========================================================================== */
+.tv-timer-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.giant-timer {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(9.5rem, 28vw, 26rem);
+  line-height: 0.88;
+  letter-spacing: 0.02em;
+  color: var(--white);
+  text-shadow: 0 12px 48px rgba(0, 0, 0, 0.9);
+  user-select: none;
+  transition: color 0.2s ease;
+}
+
+.tv-shell.is-danger {
+  animation: dangerBorderPulse 1s infinite;
+}
+
+.tv-shell.is-danger .giant-timer {
+  color: var(--red-bright);
+  text-shadow: 0 0 60px rgba(217, 4, 41, 0.85), 0 0 120px rgba(217, 4, 41, 0.45);
+  animation: timerHeartbeat 1s infinite;
+}
+
+@keyframes timerHeartbeat {
+  0% { transform: scale(1); }
+  14% { transform: scale(1.035); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.02); }
+  70% { transform: scale(1); }
+}
+
+@keyframes dangerBorderPulse {
+  0%, 100% { box-shadow: inset 0 0 0 0 rgba(217, 4, 41, 0); }
+  50% { box-shadow: inset 0 0 90px 16px rgba(217, 4, 41, 0.55); }
+}
+
+.timer-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: clamp(12px, 2vh, 28px);
+}
+
+.boss-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: #1C1C1C;
+  border: 2px solid var(--yellow);
+  padding: 10px 26px;
+  font-size: clamp(1.4rem, 2.2vw, 2.4rem);
+  font-weight: 900;
+}
+
+.boss-pill-label {
+  font-family: var(--font-display);
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+}
+
+/* ==========================================================================
+   TV DISCUSSION PHASE
+   ========================================================================== */
+.secret-reveal-box {
+  background: #161616;
+  border-left: 10px solid var(--yellow);
+  border-right: 10px solid var(--yellow);
+  padding: clamp(14px, 2vh, 26px) clamp(28px, 4vw, 64px);
+  text-align: center;
+}
+
+.secret-reveal-label {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 1.8vw, 2rem);
+  color: var(--yellow);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.secret-reveal-jp {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(2.6rem, 4.8vw, 5.4rem);
+  color: var(--white);
+  line-height: 1.1;
+  margin-top: 4px;
+}
+
+.secret-reveal-en {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 2.8vw, 3.2rem);
+  color: var(--yellow);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.discussion-timer {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(6rem, 15vw, 14rem);
+  line-height: 0.92;
+  color: var(--white);
+}
+
+.tv-shell.is-danger .discussion-timer {
+  color: var(--red-bright);
+  text-shadow: 0 0 40px rgba(217, 4, 41, 0.8);
+}
+
+/* ==========================================================================
+   TV VOTING PHASES (Vote 1, Tiebreak, Vote 2)
+   ========================================================================== */
+.vote-progress-badge {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.2vw, 3.6rem);
+  color: var(--yellow);
+  letter-spacing: 0.08em;
+}
+
+.vote-crew-grid {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(12px, 1.5vw, 20px);
+  align-content: center;
+}
+
+.vote-crew-card {
+  background: var(--bg-card);
+  border: 3px solid #333;
+  padding: clamp(12px, 1.6vh, 20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.vote-crew-card.has-voted {
+  border-color: var(--yellow);
+  background: #232015;
+}
+
+.vote-crew-card.is-tied {
+  border-color: var(--red);
+  background: #291216;
+  box-shadow: 0 0 28px rgba(217, 4, 41, 0.35);
+}
+
+.voted-stamp {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--yellow);
+  color: #0A0A0A;
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 1.3vw, 1.35rem);
+  letter-spacing: 0.1em;
+  padding: 2px 10px;
+  transform: skewX(-6deg);
+}
+
+.suspect-spotlight {
+  display: flex;
+  align-items: center;
+  gap: clamp(28px, 4vw, 60px);
+  background: linear-gradient(135deg, #271014 0%, #141414 100%);
+  border: 4px solid var(--red);
+  padding: clamp(24px, 3.2vh, 42px) clamp(36px, 5vw, 72px);
+  box-shadow: 0 0 60px rgba(217, 4, 41, 0.35);
+}
+
+/* ==========================================================================
+   TV RESULT PHASE
+   ========================================================================== */
+.result-banner {
+  font-family: var(--font-display);
+  font-size: clamp(3.4rem, 6.8vw, 7.8rem);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+  transform: skewX(-6deg);
+  text-transform: uppercase;
+}
+
+.result-banner.is-busted {
+  color: var(--yellow);
+  text-shadow: 0 0 40px rgba(245, 197, 24, 0.45);
+}
+
+.result-banner.is-escaped,
+.result-banner.is-timeout {
+  color: var(--red-bright);
+  text-shadow: 0 0 44px rgba(217, 4, 41, 0.65);
+}
+
+.result-sub {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: clamp(1.8rem, 3vw, 3.4rem);
+  color: var(--white);
+  margin-top: -10px;
+}
+
+.result-details-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(20px, 3vw, 44px);
+  width: 100%;
+  max-width: 1280px;
+}
+
+.result-rat-card {
+  flex: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: #1A1214;
+  border: 3px solid var(--red);
+  padding: 20px 30px;
+  position: relative;
+}
+
+.result-word-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #191919;
+  border: 3px solid #3A3A3A;
+  padding: 20px 28px;
+}
+
+.result-votes-line {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 2.2vw, 2.4rem);
+  letter-spacing: 0.08em;
+  color: var(--white);
+  margin-top: 10px;
+}
+
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  max-width: 1280px;
+}
+
+/* ==========================================================================
+   SMARTPHONE PLAYER VIEW (mode-player)
+   ========================================================================== */
+.player-shell {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 68px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.player-card {
+  background: #1B1B1B;
+  border: 2px solid #333;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.player-input {
+  width: 100%;
+  background: #0D0D0D;
+  border: 3px solid #444;
+  color: var(--white);
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 1.75rem;
+  padding: 16px 18px;
+  text-align: center;
+  outline: none;
+  border-radius: 0;
+  transition: border-color 0.15s;
+}
+
+.player-input:focus {
+  border-color: var(--yellow);
+}
+
+.player-btn-full {
+  width: 100%;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.8rem;
+  letter-spacing: 0.06em;
+  padding: 18px 20px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.player-btn-full.is-red {
+  background: var(--red);
+  color: var(--white);
+  box-shadow: 0 6px 24px rgba(217, 4, 41, 0.45);
+}
+
+.player-btn-full.is-yellow {
+  background: var(--yellow);
+  color: #0A0A0A;
+  box-shadow: 0 6px 24px rgba(245, 197, 24, 0.35);
+}
+
+.player-btn-full.is-dark {
+  background: #2A2A2A;
+  color: var(--white);
+  border: 2px solid #555;
+}
+
+.player-btn-full:disabled {
+  opacity: 0.4;
+}
+
+/* Player Role Card */
+.role-card {
+  width: 100%;
+  padding: 26px 20px;
+  border: 4px solid #444;
+  background: #161616;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-card.role-boss {
+  border-color: var(--yellow);
+  background: linear-gradient(180deg, #252010 0%, #141414 100%);
+}
+
+.role-card.role-rat {
+  border-color: var(--red);
+  background: linear-gradient(180deg, #2E0A10 0%, #14080A 100%);
+  animation: ratPulse 1.6s infinite;
+}
+
+@keyframes ratPulse {
+  0%, 100% { box-shadow: 0 0 18px rgba(217, 4, 41, 0.35); }
+  50% { box-shadow: 0 0 38px rgba(217, 4, 41, 0.8); }
+}
+
+.role-card.role-gangster {
+  border-color: #666;
+  background: linear-gradient(180deg, #222222 0%, #131313 100%);
+}
+
+.role-card.role-hidden {
+  border-color: #444;
+  background: #141414;
+  animation: none;
+}
+
+.role-title-lg {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  letter-spacing: 0.06em;
+  transform: skewX(-6deg);
+  line-height: 1;
+}
+
+.role-word-jp {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 2.3rem;
+  color: var(--white);
+  line-height: 1.15;
+}
+
+.role-word-en {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  color: var(--yellow);
+  letter-spacing: 0.05em;
+}
+
+.role-hint {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #C7C4BC;
+}
+
+.player-timer-bar {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+  font-size: 3.4rem;
+  line-height: 1;
+  text-align: center;
+  padding: 12px;
+  background: #151515;
+  border: 2px solid #333;
+}
+
+.player-timer-bar.is-danger {
+  color: var(--red-bright);
+  border-color: var(--red);
+}
+
+/* Boss Giant UNLOCKED Button */
+.btn-unlocked-giant {
+  width: 100%;
+  background: var(--yellow);
+  color: #0A0A0A;
+  border: 4px solid #FFF2B2;
+  padding: 26px 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 10px 36px rgba(245, 197, 24, 0.5);
+  transition: transform 0.1s ease;
+}
+
+.btn-unlocked-giant:active {
+  transform: scale(0.96);
+}
+
+.btn-unlocked-jp {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 2.1rem;
+  line-height: 1.1;
+}
+
+.btn-unlocked-en {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+/* Player Voting List */
+.player-vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.player-vote-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #1E1E1E;
+  border: 3px solid #383838;
+  padding: 12px 16px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--white);
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.player-vote-item:active,
+.player-vote-item.selected {
+  border-color: var(--yellow);
+  background: #2A2514;
+}
+
+.player-vote-avatar {
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
+}
+
+.player-vote-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.player-vote-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player-vote-code {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.05em;
+  line-height: 1.05;
+}
+
+.player-vote-nick {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 1.35rem;
+  color: var(--white);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verdict-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+}
+
+.verdict-btn {
+  padding: 28px 12px;
+  border: 4px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.verdict-btn.is-yes {
+  background: var(--red);
+  color: var(--white);
+  border-color: #FF5973;
+}
+
+.verdict-btn.is-no {
+  background: #262626;
+  color: var(--white);
+  border-color: #666;
+}
+
+.verdict-main {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.verdict-sub {
+  font-family: var(--font-jp);
+  font-weight: 900;
+  font-size: 1.35rem;
+}
+
+/* Status Pill (subtle sync notice if offline) */
+.sync-toast {
+  position: fixed;
+  bottom: 14px;
+  left: 18px;
+  z-index: 9000;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid #444;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  letter-spacing: 0.05em;
+}
+
+.sync-toast.is-error {
+  border-color: var(--red);
+  color: var(--red-bright);
+}
+
+/* Responsive fallback if TV window is narrower */
+@media (max-width: 1100px) {
+  body.mode-tv {
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+  .tv-shell {
+    height: auto;
+    min-height: 100vh;
+  }
+  .tv-lobby-main {
+    grid-template-columns: 1fr;
+  }
+  .crew-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto;
+  }
+  .genre-bar {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .result-details-row {
+    flex-direction: column;
+  }
+}
