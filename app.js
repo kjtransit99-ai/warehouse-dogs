@@ -404,6 +404,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const queryRoomId = (urlParams.get('room') || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   const isPlayerMode = Boolean(queryRoomId);
+  const isDemoMode = !isPlayerMode && urlParams.get('demo') === '1';
 
   const state = {
     mode: isPlayerMode ? 'player' : 'tv',
@@ -684,6 +685,61 @@
     let fresh = pool.filter((w) => !usedSet.has(w.jp + '|' + w.en));
     if (fresh.length === 0) fresh = pool;
     return fresh[Math.floor(Math.random() * fresh.length)];
+  }
+
+  function addDemoBots() {
+    const room = state.room;
+    if (!room || !roomRef) return;
+    const existing = getSortedPlayers(room);
+    const usedIndices = new Set(existing.map((p) => p.codenameIndex));
+    const updates = { updatedAt: Date.now() };
+    let added = 0;
+    const botNames = ['BOT-1', 'BOT-2', 'BOT-3', 'BOT-4', 'BOT-5', 'BOT-6', 'BOT-7'];
+    for (let i = 0; i < MAX_PLAYERS && added < 3; i++) {
+      if (usedIndices.has(i)) continue;
+      usedIndices.add(i);
+      const pid = 'bot_' + Date.now().toString(36) + '_' + i;
+      updates['players.' + pid] = {
+        id: pid,
+        name: botNames[added] || ('BOT-' + (added + 1)),
+        codenameIndex: i,
+        joinedAt: Date.now() + added,
+        isBot: true
+      };
+      added++;
+    }
+    if (added > 0) {
+      roomRef.update(updates).catch(() => {});
+    }
+  }
+
+  function castDemoBotVotes1() {
+    const room = state.room;
+    if (!room || !roomRef || room.phase !== 'vote1') return;
+    const players = getSortedPlayers(room);
+    const bots = players.filter((p) => p.isBot);
+    const candidates = players.filter((p) => p.id !== room.bossId);
+    if (!bots.length || !candidates.length) return;
+    const updates = { updatedAt: Date.now() };
+    bots.forEach((bot) => {
+      const valid = candidates.filter((c) => c.id !== bot.id);
+      const pool = valid.length ? valid : candidates;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      updates['votes1.' + bot.id] = pick.id;
+    });
+    roomRef.update(updates).catch(() => {});
+  }
+
+  function castDemoBotVotes2() {
+    const room = state.room;
+    if (!room || !roomRef || room.phase !== 'vote2') return;
+    const bots = getSortedPlayers(room).filter((p) => p.isBot);
+    if (!bots.length) return;
+    const updates = { updatedAt: Date.now() };
+    bots.forEach((bot) => {
+      updates['votes2.' + bot.id] = Math.random() < 0.65 ? 'YES' : 'NO';
+    });
+    roomRef.update(updates).catch(() => {});
   }
 
   function startMission() {
@@ -1124,6 +1180,8 @@
       if (btn) btn.addEventListener('click', startQuestioning);
     } else if (phase === 'questioning') {
       app.innerHTML = renderTVQuestioning(room);
+      const demoUnlockBtn = document.getElementById('btn-demo-unlocked');
+      if (demoUnlockBtn) demoUnlockBtn.addEventListener('click', triggerUnlocked);
     } else if (phase === 'discussion') {
       app.innerHTML = renderTVDiscussion(room);
       const skipBtn = document.getElementById('btn-skip-vote');
@@ -1132,6 +1190,8 @@
       app.innerHTML = renderTVVote1(room);
       const closeBtn = document.getElementById('btn-close-vote1');
       if (closeBtn) closeBtn.addEventListener('click', () => finalizeVote1(room));
+      const botVote1Btn = document.getElementById('btn-demo-vote1');
+      if (botVote1Btn) botVote1Btn.addEventListener('click', castDemoBotVotes1);
     } else if (phase === 'tiebreak') {
       app.innerHTML = renderTVTiebreak(room);
       const rndBtn = document.getElementById('btn-tie-random');
@@ -1140,6 +1200,8 @@
       app.innerHTML = renderTVVote2(room);
       const revBtn = document.getElementById('btn-reveal-verdict');
       if (revBtn) revBtn.addEventListener('click', () => finalizeVote2(room));
+      const botVote2Btn = document.getElementById('btn-demo-vote2');
+      if (botVote2Btn) botVote2Btn.addEventListener('click', castDemoBotVotes2);
     } else if (phase === 'result') {
       app.innerHTML = renderTVResult(room);
       const keepBtn = document.getElementById('btn-replay-keep');
@@ -1215,6 +1277,7 @@
                 <button id="btn-start-mission" class="btn-noir btn-primary" type="button" ${canStart ? '' : 'disabled'}>
                   ${escapeHtml(startLabel)}
                 </button>
+                ${isDemoMode ? `<button id="btn-demo-add-bots" class="btn-noir btn-yellow" style="font-size:clamp(1.1rem,1.4vw,1.5rem);padding:12px 18px;" type="button">+3 BOT</button>` : ''}
                 <button id="btn-new-room" class="btn-noir btn-ghost" type="button">${t('newRoom')}</button>
               </div>
             </div>
@@ -1233,6 +1296,8 @@
     });
     const startBtn = document.getElementById('btn-start-mission');
     if (startBtn) startBtn.addEventListener('click', startMission);
+    const addBotsBtn = document.getElementById('btn-demo-add-bots');
+    if (addBotsBtn) addBotsBtn.addEventListener('click', addDemoBots);
     const newBtn = document.getElementById('btn-new-room');
     if (newBtn) newBtn.addEventListener('click', createBrandNewRoom);
   }
@@ -1289,6 +1354,7 @@
                 <span style="color:${code.color};font-family:var(--font-display);">${code.label}</span>
                 <span>${escapeHtml(boss.name)}</span>
               </div>
+              ${isDemoMode ? `<button id="btn-demo-unlocked" class="btn-noir btn-yellow" style="font-size:1.3rem;padding:12px 24px;" type="button">DEMO: UNLOCKED!</button>` : ''}
             </div>
           ` : ''}
         </section>
@@ -1352,7 +1418,10 @@
           <div class="phase-banner">${t('vote1Title')}</div>
           <div class="check-phone-prompt" style="margin-top:-10px;">${t('vote1Sub')}</div>
           <div class="vote-crew-grid">${cardsHtml}</div>
-          <button id="btn-close-vote1" class="btn-noir btn-ghost" type="button">${t('closeVote')}</button>
+          <div style="display:flex;gap:14px;">
+            ${isDemoMode ? `<button id="btn-demo-vote1" class="btn-noir btn-yellow" style="font-size:1.25rem;padding:12px 22px;" type="button">DEMO: BOT投票</button>` : ''}
+            <button id="btn-close-vote1" class="btn-noir btn-ghost" type="button">${t('closeVote')}</button>
+          </div>
         </section>
       </div>
     `;
@@ -1412,7 +1481,10 @@
               </div>
             </div>
           ` : ''}
-          <button id="btn-reveal-verdict" class="btn-noir btn-ghost" type="button">${t('revealVerdict')}</button>
+          <div style="display:flex;gap:14px;">
+            ${isDemoMode ? `<button id="btn-demo-vote2" class="btn-noir btn-yellow" style="font-size:1.25rem;padding:12px 22px;" type="button">DEMO: BOT投票</button>` : ''}
+            <button id="btn-reveal-verdict" class="btn-noir btn-ghost" type="button">${t('revealVerdict')}</button>
+          </div>
         </section>
       </div>
     `;
