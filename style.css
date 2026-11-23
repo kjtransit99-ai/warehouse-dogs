@@ -74,6 +74,25 @@ body.mode-player {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
+.blackout-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9400;
+  background: #000000;
+  opacity: 0;
+  transition: opacity 0.65s ease-in;
+}
+
+.blackout-overlay.is-dark {
+  opacity: 1;
+}
+
+.blackout-overlay.is-instant-off {
+  opacity: 0;
+  transition: none;
+}
+
 .flash-overlay {
   position: fixed;
   inset: 0;

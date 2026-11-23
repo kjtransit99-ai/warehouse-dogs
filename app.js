@@ -351,6 +351,51 @@
       ping.stop(startTime + 0.18);
     },
 
+    playMetallicClick(startTime, baseFreq, gainPeak) {
+      const ctx = this.ctx;
+      const noiseBuf = this.getNoiseBuffer();
+
+      // Crisp metallic snap (high-pass bandpass noise)
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(baseFreq, startTime);
+      bp.Q.value = 3.2;
+
+      const nGain = ctx.createGain();
+      nGain.gain.setValueAtTime(0.001, startTime);
+      nGain.gain.linearRampToValueAtTime(gainPeak, startTime + 0.002);
+      nGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.045);
+
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(ctx.destination);
+      noise.start(startTime);
+      noise.stop(startTime + 0.055);
+
+      // Steel lock resonance ping
+      const osc = ctx.createOscillator();
+      const oGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(baseFreq * 1.15, startTime);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.65, startTime + 0.04);
+      oGain.gain.setValueAtTime(gainPeak * 0.45, startTime);
+      oGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.045);
+      osc.connect(oGain);
+      oGain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.05);
+    },
+
+    playSlideRack(startTime) {
+      // "ジャキッ・カチャン！" two-stage metallic slide pull & chamber snap
+      this.playMetallicClick(startTime, 2100, 0.42);
+      this.playMetallicClick(startTime + 0.055, 2900, 0.35);
+      this.playMetallicClick(startTime + 0.165, 3400, 0.58);
+      this.playMetallicClick(startTime + 0.195, 1650, 0.50);
+    },
+
     playOutcome(outcome) {
       if (this.muted || !this.ctx || this.ctx.state !== 'running') return;
       try {
@@ -373,7 +418,17 @@
           return;
         }
 
-        // Extended ~5.8s Tarantino-style multi-wave warehouse shootout ("ダダダダダダダー！")
+        // Phase 1 (0.75s - 2.35s): In pitch-black darkness — "カチャッ・・・カチャッ・・ジャキン！"
+        this.playMetallicClick(now + 0.80, 2300, 0.52);
+        this.playMetallicClick(now + 0.85, 3100, 0.32);
+        this.playMetallicClick(now + 1.48, 2550, 0.56);
+        this.playMetallicClick(now + 1.53, 3350, 0.34);
+        this.playSlideRack(now + 2.12);
+
+        // Phase 2 (2.35s - 3.20s): Dead silence (一瞬の空白)
+
+        // Phase 3 (3.20s+): Extended ~5.8s Tarantino-style multi-wave warehouse shootout
+        const fireStart = now + 3.20;
         const burstOffsets = [];
         // Wave 1 (0.00s - 1.35s): Opening burst
         for (let t = 0.0; t <= 1.35; t += 0.085) {
@@ -392,11 +447,11 @@
 
         burstOffsets.forEach((off, idx) => {
           const isFinalBlast = idx === burstOffsets.length - 1;
-          this.playGunshot(now + Math.max(0, off), isFinalBlast ? 1.6 : (0.8 + Math.random() * 0.25));
+          this.playGunshot(fireStart + Math.max(0, off), isFinalBlast ? 1.6 : (0.8 + Math.random() * 0.25));
         });
 
         // Warehouse reverb tail / noir chord sting right after the shootout
-        const stingStart = now + 5.85;
+        const stingStart = fireStart + 5.85;
         const notes = outcome === 'busted'
           ? [196, 246.94, 293.66, 392]
           : [146.83, 138.59, 130.81, 98];
@@ -717,9 +772,11 @@
       }
       if (prevPhase && prevPhase !== 'result' && data.phase === 'result') {
         if (data.outcome !== 'timeout') {
-          triggerGunfireFlash();
+          triggerVerdictBlackoutThenFire();
         }
         SoundEngine.playOutcome(data.outcome);
+      } else if (prevPhase === 'result' && data.phase !== 'result') {
+        clearVerdictBlackout();
       }
       // Auto-advance Vote 1 when all players have voted
       if (data.phase === 'vote1' && players.length > 0) {
@@ -1177,6 +1234,38 @@
     el.classList.remove('is-unlocked', 'is-gunfire');
     void el.offsetWidth;
     el.classList.add('is-gunfire');
+  }
+
+  let verdictBlackoutTimer = null;
+
+  function clearVerdictBlackout() {
+    if (verdictBlackoutTimer) {
+      clearTimeout(verdictBlackoutTimer);
+      verdictBlackoutTimer = null;
+    }
+    const blackout = document.getElementById('blackout-overlay');
+    if (blackout) {
+      blackout.classList.remove('is-dark', 'is-instant-off');
+    }
+  }
+
+  function triggerVerdictBlackoutThenFire() {
+    clearVerdictBlackout();
+    const blackout = document.getElementById('blackout-overlay');
+    if (blackout) {
+      blackout.classList.remove('is-instant-off');
+      void blackout.offsetWidth;
+      blackout.classList.add('is-dark');
+    }
+    // 3200ms: matches reload clicks (0.8s-2.35s) + dead silence (2.35s-3.20s) -> EXPLODE!
+    verdictBlackoutTimer = setTimeout(() => {
+      verdictBlackoutTimer = null;
+      if (blackout) {
+        blackout.classList.remove('is-dark');
+        blackout.classList.add('is-instant-off');
+      }
+      triggerGunfireFlash();
+    }, 3200);
   }
 
   function formatMMSS(ms) {
