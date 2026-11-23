@@ -87,12 +87,34 @@ body.mode-player {
   animation: unlockedFlash 1.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.flash-overlay.is-gunfire {
+  animation: gunfireFlash 1.15s linear forwards;
+}
+
 @keyframes unlockedFlash {
   0% { opacity: 0.98; background: #FFFFFF; }
   12% { opacity: 0.85; background: var(--yellow); }
   24% { opacity: 0.95; background: #FFFFFF; }
   40% { opacity: 0.75; background: var(--red); }
   58% { opacity: 0.5; background: var(--yellow); }
+  100% { opacity: 0; background: transparent; }
+}
+
+@keyframes gunfireFlash {
+  0%   { opacity: 0.9; background: #FFF6CC; }
+  4%   { opacity: 0.05; background: var(--red); }
+  8%   { opacity: 0.85; background: #FFFFFF; }
+  12%  { opacity: 0.05; background: var(--red); }
+  16%  { opacity: 0.88; background: #FFF6CC; }
+  21%  { opacity: 0.05; background: var(--red); }
+  25%  { opacity: 0.85; background: #FFFFFF; }
+  30%  { opacity: 0.05; background: var(--red); }
+  34%  { opacity: 0.9; background: #FFF6CC; }
+  39%  { opacity: 0.05; background: var(--red); }
+  44%  { opacity: 0.85; background: #FFFFFF; }
+  50%  { opacity: 0.08; background: var(--red); }
+  56%  { opacity: 0.95; background: var(--red); }
+  66%  { opacity: 0.4; background: var(--red); }
   100% { opacity: 0; background: transparent; }
 }
 

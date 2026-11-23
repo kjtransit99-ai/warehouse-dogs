@@ -287,10 +287,101 @@
       } catch (_) {}
     },
 
+    _noiseBuffer: null,
+    getNoiseBuffer() {
+      if (this._noiseBuffer) return this._noiseBuffer;
+      const sampleRate = this.ctx.sampleRate;
+      const length = Math.floor(sampleRate * 0.45);
+      const buffer = this.ctx.createBuffer(1, length, sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      this._noiseBuffer = buffer;
+      return buffer;
+    },
+
+    playGunshot(startTime, power) {
+      const ctx = this.ctx;
+      const noiseBuf = this.getNoiseBuffer();
+
+      // 1) Sharp muzzle crack (bandpass-filtered noise)
+      const noise = ctx.createBufferSource();
+      noise.buffer = noiseBuf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(1400 + Math.random() * 500, startTime);
+      bp.frequency.exponentialRampToValueAtTime(320, startTime + 0.14);
+      bp.Q.value = 0.75;
+
+      const nGain = ctx.createGain();
+      nGain.gain.setValueAtTime(0.001, startTime);
+      nGain.gain.linearRampToValueAtTime(0.85 * power, startTime + 0.003);
+      nGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.16 * power);
+
+      noise.connect(bp);
+      bp.connect(nGain);
+      nGain.connect(ctx.destination);
+      noise.start(startTime);
+      noise.stop(startTime + 0.18 * power);
+
+      // 2) Low-end chest thump (warehouse punch)
+      const osc = ctx.createOscillator();
+      const oGain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(185 + Math.random() * 30, startTime);
+      osc.frequency.exponentialRampToValueAtTime(34, startTime + 0.11);
+      oGain.gain.setValueAtTime(0.7 * power, startTime);
+      oGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.13);
+      osc.connect(oGain);
+      oGain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.14);
+
+      // 3) Subtle metallic shell casing ping
+      const ping = ctx.createOscillator();
+      const pGain = ctx.createGain();
+      ping.type = 'sine';
+      ping.frequency.setValueAtTime(2700 + Math.random() * 900, startTime + 0.09);
+      pGain.gain.setValueAtTime(0.045 * power, startTime + 0.09);
+      pGain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.17);
+      ping.connect(pGain);
+      pGain.connect(ctx.destination);
+      ping.start(startTime + 0.09);
+      ping.stop(startTime + 0.18);
+    },
+
     playOutcome(outcome) {
       if (this.muted || !this.ctx || this.ctx.state !== 'running') return;
       try {
         const now = this.ctx.currentTime;
+
+        if (outcome === 'timeout') {
+          // Time-up heavy noir bass drop
+          [130.81, 123.47, 98, 65.41].forEach((freq, i) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(freq, now + i * 0.14);
+            gain.gain.setValueAtTime(0.22, now + i * 0.14);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.14 + 0.55);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now + i * 0.14);
+            osc.stop(now + i * 0.14 + 0.6);
+          });
+          return;
+        }
+
+        // Rapid-fire "ダダダダダダダダー！" machine-gun / shootout burst
+        const burstOffsets = [0.00, 0.075, 0.15, 0.22, 0.295, 0.37, 0.445, 0.52, 0.60, 0.72];
+        burstOffsets.forEach((off, idx) => {
+          const isFinalBlast = idx === burstOffsets.length - 1;
+          this.playGunshot(now + off, isFinalBlast ? 1.45 : (0.85 + Math.random() * 0.2));
+        });
+
+        // Warehouse reverb tail / noir chord sting right after the shootout
+        const stingStart = now + 0.88;
         const notes = outcome === 'busted'
           ? [196, 246.94, 293.66, 392]
           : [146.83, 138.59, 130.81, 98];
@@ -298,13 +389,13 @@
           const osc = this.ctx.createOscillator();
           const gain = this.ctx.createGain();
           osc.type = outcome === 'busted' ? 'triangle' : 'sawtooth';
-          osc.frequency.setValueAtTime(freq, now + i * 0.12);
-          gain.gain.setValueAtTime(0.18, now + i * 0.12);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.55);
+          osc.frequency.setValueAtTime(freq, stingStart + i * 0.08);
+          gain.gain.setValueAtTime(0.16, stingStart + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, stingStart + i * 0.08 + 0.75);
           osc.connect(gain);
           gain.connect(this.ctx.destination);
-          osc.start(now + i * 0.12);
-          osc.stop(now + i * 0.12 + 0.6);
+          osc.start(stingStart + i * 0.08);
+          osc.stop(stingStart + i * 0.08 + 0.8);
         });
       } catch (_) {}
     }
@@ -610,6 +701,9 @@
         SoundEngine.playUnlocked();
       }
       if (prevPhase && prevPhase !== 'result' && data.phase === 'result') {
+        if (data.outcome !== 'timeout') {
+          triggerGunfireFlash();
+        }
         SoundEngine.playOutcome(data.outcome);
       }
       // Auto-advance Vote 1 when all players have voted
@@ -1057,9 +1151,17 @@
   function triggerUnlockedFlash() {
     const el = document.getElementById('flash-overlay');
     if (!el) return;
-    el.classList.remove('is-unlocked');
+    el.classList.remove('is-unlocked', 'is-gunfire');
     void el.offsetWidth;
     el.classList.add('is-unlocked');
+  }
+
+  function triggerGunfireFlash() {
+    const el = document.getElementById('flash-overlay');
+    if (!el) return;
+    el.classList.remove('is-unlocked', 'is-gunfire');
+    void el.offsetWidth;
+    el.classList.add('is-gunfire');
   }
 
   function formatMMSS(ms) {
