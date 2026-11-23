@@ -92,6 +92,9 @@
       roleGangHint: 'ボスに質問してお題を当てろ',
       votePickSuspect: '警察の犬だと思う人物を選べ',
       voteLocked: '投票完了',
+      confirmVote: 'この人物に投票する',
+      confirmVerdict: 'この審判で投票する',
+      changeVote: '投票し直す',
       bossTiePick: 'ボス決選指名：容疑者を1名選べ',
       waitingTie: '同票決選中...',
       verdictPrompt: 'こいつが警察の犬か？',
@@ -152,6 +155,9 @@
       roleGangHint: 'ASK THE BOSS TO FIND THE SECRET WORD',
       votePickSuspect: 'WHO IS THE RAT?',
       voteLocked: 'VOTE LOCKED',
+      confirmVote: 'CONFIRM VOTE',
+      confirmVerdict: 'CONFIRM VERDICT',
+      changeVote: 'CHANGE VOTE',
       bossTiePick: 'BOSS TIEBREAKER: PICK THE SUSPECT',
       waitingTie: 'RESOLVING TIE...',
       verdictPrompt: 'IS THIS THE RAT?',
@@ -419,7 +425,11 @@
     lastPlayerCount: 0,
     lastTickSecond: -1,
     joining: false,
-    joinError: ''
+    joinError: '',
+    pendingVote1: null,
+    pendingVote2: null,
+    editingVote1: false,
+    editingVote2: false
   };
 
   let db = null;
@@ -618,9 +628,15 @@
       }
     }
 
-    // Player: reset role privacy toggle when entering a new round's roles phase
-    if (state.mode === 'player' && prevPhase !== 'roles' && data.phase === 'roles') {
-      state.roleRevealed = false;
+    // Player: reset local phase UI state when phase changes
+    if (state.mode === 'player' && prevPhase !== data.phase) {
+      if (data.phase === 'roles') {
+        state.roleRevealed = false;
+      }
+      state.pendingVote1 = null;
+      state.pendingVote2 = null;
+      state.editingVote1 = false;
+      state.editingVote2 = false;
     }
 
     state.lastPhase = data.phase;
@@ -1025,6 +1041,7 @@
 
       state.playerId = pid;
       safeLocalSet('wd_pid_' + state.roomId, pid);
+      safeLocalSet('wd_last_nickname', nickname);
       state.joining = false;
       render();
     } catch (err) {
@@ -1578,8 +1595,13 @@
 
       app.innerHTML = renderPlayerJoin(room);
       const newInput = document.getElementById('nickname-input');
-      if (newInput && prevValue) {
-        newInput.value = prevValue;
+      if (newInput) {
+        if (prevValue) {
+          newInput.value = prevValue;
+        } else {
+          const savedNick = safeLocalGet('wd_last_nickname');
+          if (savedNick) newInput.value = savedNick;
+        }
       }
       if (newInput && wasFocused) {
         newInput.focus();
@@ -1768,7 +1790,7 @@
 
   function renderPlayerVote1(room, me) {
     const myVote = room.votes1 && room.votes1[me.id];
-    if (myVote) {
+    if (myVote && !state.editingVote1) {
       const target = getPlayerById(room, myVote);
       const code = target ? getCodename(target.codenameIndex) : CODENAMES[0];
       return `
@@ -1779,15 +1801,20 @@
             <div class="crew-codename" style="color:${code.color};font-size:2rem;">${code.label}</div>
             <div class="crew-nickname" style="font-size:1.7rem;">${escapeHtml(target.name)}</div>
           ` : ''}
+          <button id="btn-change-vote1" class="player-btn-full is-dark" style="margin-top:8px;font-size:1.35rem;padding:14px;" type="button">
+            ${t('changeVote')}
+          </button>
         </div>
       `;
     }
 
     const candidates = getSortedPlayers(room).filter((p) => p.id !== room.bossId && p.id !== me.id);
+    const selectedId = state.pendingVote1 || (state.editingVote1 ? myVote : null);
     const listHtml = candidates.map((p) => {
       const code = getCodename(p.codenameIndex);
+      const isSelected = selectedId === p.id;
       return `
-        <button class="player-vote-item" data-vote1="${escapeHtml(p.id)}" type="button">
+        <button class="player-vote-item ${isSelected ? 'selected' : ''}" data-select-vote1="${escapeHtml(p.id)}" type="button">
           <div class="player-vote-avatar">${renderGangsterSVG(code.color, false)}</div>
           <div class="player-vote-names">
             <span class="player-vote-code" style="color:${code.color};">${code.label}</span>
@@ -1801,6 +1828,9 @@
       <div class="player-card">
         <div class="noir-heading" style="font-size:1.85rem;color:var(--yellow);">${t('votePickSuspect')}</div>
         <div class="player-vote-list">${listHtml}</div>
+        <button id="btn-confirm-vote1" class="player-btn-full is-yellow" style="margin-top:6px;" type="button" ${selectedId ? '' : 'disabled'}>
+          ${t('confirmVote')}
+        </button>
       </div>
     `;
   }
@@ -1842,16 +1872,21 @@
     const code = suspect ? getCodename(suspect.codenameIndex) : CODENAMES[0];
     const myVote = room.votes2 && room.votes2[me.id];
 
-    if (myVote) {
+    if (myVote && !state.editingVote2) {
       return `
         <div class="player-card" style="border-color:var(--yellow);">
           <div class="noir-heading" style="font-size:2.2rem;color:var(--yellow);">${t('voteLocked')}</div>
           <div style="font-family:var(--font-display);font-size:3rem;color:${myVote === 'YES' ? 'var(--red-bright)' : 'var(--white)'};">
             ${myVote}
           </div>
+          <button id="btn-change-vote2" class="player-btn-full is-dark" style="margin-top:8px;font-size:1.35rem;padding:14px;" type="button">
+            ${t('changeVote')}
+          </button>
         </div>
       `;
     }
+
+    const selectedChoice = state.pendingVote2 || (state.editingVote2 ? myVote : null);
 
     return `
       <div class="player-card" style="border-color:var(--red);">
@@ -1862,15 +1897,20 @@
           <div class="crew-nickname" style="font-size:1.8rem;">${escapeHtml(suspect.name)}</div>
         ` : ''}
         <div class="verdict-btn-grid">
-          <button class="verdict-btn is-yes" data-vote2="YES" type="button">
+          <button class="verdict-btn is-yes" data-select-vote2="YES" type="button"
+                  style="${selectedChoice === 'YES' ? 'outline:4px solid var(--yellow);transform:scale(1.03);' : 'opacity:0.78;'}">
             <span class="verdict-main">YES</span>
             <span class="verdict-sub">（${t('yesGuilty')}）</span>
           </button>
-          <button class="verdict-btn is-no" data-vote2="NO" type="button">
+          <button class="verdict-btn is-no" data-select-vote2="NO" type="button"
+                  style="${selectedChoice === 'NO' ? 'outline:4px solid var(--yellow);transform:scale(1.03);' : 'opacity:0.78;'}">
             <span class="verdict-main">NO</span>
             <span class="verdict-sub">（${t('noInnocent')}）</span>
           </button>
         </div>
+        <button id="btn-confirm-vote2" class="player-btn-full is-yellow" style="margin-top:6px;" type="button" ${selectedChoice ? '' : 'disabled'}>
+          ${t('confirmVerdict')}
+        </button>
       </div>
     `;
   }
@@ -1906,7 +1946,7 @@
     `;
   }
 
-  function bindPlayerPhaseEvents() {
+  function bindPlayerPhaseEvents(room, me) {
     const roleCard = document.getElementById('role-toggle-card');
     if (roleCard) {
       roleCard.addEventListener('click', () => {
@@ -1921,15 +1961,62 @@
         triggerUnlocked();
       });
     }
-    document.querySelectorAll('[data-vote1]').forEach((btn) => {
-      btn.addEventListener('click', () => castVote1(btn.getAttribute('data-vote1')));
+    // Vote 1: select -> confirm & change vote
+    document.querySelectorAll('[data-select-vote1]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.pendingVote1 = btn.getAttribute('data-select-vote1');
+        render();
+      });
     });
+    const confirmVote1Btn = document.getElementById('btn-confirm-vote1');
+    if (confirmVote1Btn) {
+      confirmVote1Btn.addEventListener('click', () => {
+        const myVote = room && room.votes1 && me ? room.votes1[me.id] : null;
+        const choice = state.pendingVote1 || (state.editingVote1 ? myVote : null);
+        if (!choice) return;
+        state.editingVote1 = false;
+        state.pendingVote1 = null;
+        castVote1(choice);
+      });
+    }
+    const changeVote1Btn = document.getElementById('btn-change-vote1');
+    if (changeVote1Btn) {
+      changeVote1Btn.addEventListener('click', () => {
+        state.editingVote1 = true;
+        state.pendingVote1 = room && room.votes1 && me ? room.votes1[me.id] : null;
+        render();
+      });
+    }
+    // Tiebreak
     document.querySelectorAll('[data-tiepick]').forEach((btn) => {
       btn.addEventListener('click', () => pickTiebreakSuspect(btn.getAttribute('data-tiepick')));
     });
-    document.querySelectorAll('[data-vote2]').forEach((btn) => {
-      btn.addEventListener('click', () => castVote2(btn.getAttribute('data-vote2')));
+    // Vote 2: select -> confirm & change vote
+    document.querySelectorAll('[data-select-vote2]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.pendingVote2 = btn.getAttribute('data-select-vote2');
+        render();
+      });
     });
+    const confirmVote2Btn = document.getElementById('btn-confirm-vote2');
+    if (confirmVote2Btn) {
+      confirmVote2Btn.addEventListener('click', () => {
+        const myVote = room && room.votes2 && me ? room.votes2[me.id] : null;
+        const choice = state.pendingVote2 || (state.editingVote2 ? myVote : null);
+        if (!choice) return;
+        state.editingVote2 = false;
+        state.pendingVote2 = null;
+        castVote2(choice);
+      });
+    }
+    const changeVote2Btn = document.getElementById('btn-change-vote2');
+    if (changeVote2Btn) {
+      changeVote2Btn.addEventListener('click', () => {
+        state.editingVote2 = true;
+        state.pendingVote2 = room && room.votes2 && me ? room.votes2[me.id] : null;
+        render();
+      });
+    }
   }
 
   /* =========================================================================
@@ -1985,6 +2072,29 @@
         SoundEngine.muted = !SoundEngine.muted;
         updateTopControlsUI();
       });
+    }
+
+    // Smartphone browser Back-button guard (prevents accidental exit to entry screen)
+    if (state.mode === 'player') {
+      try {
+        window.history.pushState({ wdGuard: true }, '', window.location.href);
+        window.addEventListener('popstate', () => {
+          try {
+            window.history.pushState({ wdGuard: true }, '', window.location.href);
+          } catch (_) {}
+          // If player pressed Back after voting, open Change Vote picker
+          const room = state.room;
+          if (room && room.phase === 'vote1' && room.votes1 && room.votes1[state.playerId]) {
+            state.editingVote1 = true;
+            state.pendingVote1 = room.votes1[state.playerId];
+            render();
+          } else if (room && room.phase === 'vote2' && room.votes2 && room.votes2[state.playerId]) {
+            state.editingVote2 = true;
+            state.pendingVote2 = room.votes2[state.playerId];
+            render();
+          }
+        });
+      } catch (_) {}
     }
   }
 
