@@ -1050,13 +1050,16 @@
   function mountQRCode(containerId, roomId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    if (typeof window.qrcode !== 'function') {
+    const qrFactory = (typeof window.qrcode === 'function')
+      ? window.qrcode
+      : (typeof qrcode === 'function' ? qrcode : null);
+    if (!qrFactory) {
       container.innerHTML = '<div style="color:#000;font-weight:900;padding:20px;">QR LIB LOADING...</div>';
       return;
     }
     try {
       const url = buildPlayerJoinUrl(roomId);
-      const qr = window.qrcode(0, 'M');
+      const qr = qrFactory(0, 'M');
       qr.addData(url);
       qr.make();
       // Crisp high-contrast SVG with zero blur
