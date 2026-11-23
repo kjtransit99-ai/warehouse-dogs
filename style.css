@@ -88,7 +88,7 @@ body.mode-player {
 }
 
 .flash-overlay.is-gunfire {
-  animation: gunfireFlash 1.15s linear forwards;
+  animation: gunfireFlash 1.15s linear 5 forwards;
 }
 
 @keyframes unlockedFlash {

@@ -373,15 +373,30 @@
           return;
         }
 
-        // Rapid-fire "ダダダダダダダダー！" machine-gun / shootout burst
-        const burstOffsets = [0.00, 0.075, 0.15, 0.22, 0.295, 0.37, 0.445, 0.52, 0.60, 0.72];
+        // Extended ~5.8s Tarantino-style multi-wave warehouse shootout ("ダダダダダダダー！")
+        const burstOffsets = [];
+        // Wave 1 (0.00s - 1.35s): Opening burst
+        for (let t = 0.0; t <= 1.35; t += 0.085) {
+          burstOffsets.push(t + (Math.random() * 0.014 - 0.007));
+        }
+        // Wave 2 (1.65s - 3.15s): Crossfire spray
+        for (let t = 1.65; t <= 3.15; t += 0.078) {
+          burstOffsets.push(t + (Math.random() * 0.016 - 0.008));
+        }
+        // Wave 3 (3.42s - 5.25s): Relentless full-auto climax
+        for (let t = 3.42; t <= 5.25; t += 0.070) {
+          burstOffsets.push(t + (Math.random() * 0.014 - 0.007));
+        }
+        // Final finishing boom (5.55s)
+        burstOffsets.push(5.55);
+
         burstOffsets.forEach((off, idx) => {
           const isFinalBlast = idx === burstOffsets.length - 1;
-          this.playGunshot(now + off, isFinalBlast ? 1.45 : (0.85 + Math.random() * 0.2));
+          this.playGunshot(now + Math.max(0, off), isFinalBlast ? 1.6 : (0.8 + Math.random() * 0.25));
         });
 
         // Warehouse reverb tail / noir chord sting right after the shootout
-        const stingStart = now + 0.88;
+        const stingStart = now + 5.85;
         const notes = outcome === 'busted'
           ? [196, 246.94, 293.66, 392]
           : [146.83, 138.59, 130.81, 98];
