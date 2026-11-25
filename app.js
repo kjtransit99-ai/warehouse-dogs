@@ -1322,7 +1322,10 @@
      9. QR CODE GENERATION (Dynamic from current public URL, z-index: 10000)
      ========================================================================= */
   function buildPlayerJoinUrl(roomId) {
-    const base = window.location.origin + window.location.pathname;
+    const isHttp = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+    const base = (isHttp && window.location.origin && window.location.origin !== 'null')
+      ? (window.location.origin + window.location.pathname)
+      : 'https://kjtransit99-ai.github.io/warehouse-dogs/';
     return base + '?room=' + encodeURIComponent(roomId);
   }
 
