@@ -483,17 +483,17 @@
 
   function renderGangsterSVG(colorHex, isEmpty) {
     const uid = 'g' + (++svgUidCounter);
-    const accent = isEmpty ? '#3A3A40' : colorHex;
-    const ringAlpha = isEmpty ? '0.24' : '0.92';
+    const accent = isEmpty ? '#6E6E78' : colorHex;
+    const ringAlpha = isEmpty ? '0.45' : '0.92';
 
     return `
       <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
         <defs>
           <radialGradient id="spot-${uid}" cx="46%" cy="44%" r="58%">
-            <stop offset="0%" stop-color="${isEmpty ? '#38383E' : '#FFFFFF'}" stop-opacity="${isEmpty ? '0.24' : '0.92'}"/>
-            <stop offset="32%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.22' : '0.95'}"/>
-            <stop offset="78%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.12' : '0.68'}"/>
-            <stop offset="100%" stop-color="#09090B" stop-opacity="${isEmpty ? '0.88' : '0.55'}"/>
+            <stop offset="0%" stop-color="${isEmpty ? '#A8A8B2' : '#FFFFFF'}" stop-opacity="${isEmpty ? '0.52' : '0.92'}"/>
+            <stop offset="32%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.44' : '0.95'}"/>
+            <stop offset="78%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.24' : '0.68'}"/>
+            <stop offset="100%" stop-color="#09090B" stop-opacity="${isEmpty ? '0.78' : '0.55'}"/>
           </radialGradient>
           <clipPath id="badge-${uid}">
             <circle cx="80" cy="80" r="74"/>
@@ -508,11 +508,11 @@
         <g clip-path="url(#badge-${uid})">
           <image href="${GANGSTER_SILHOUETTE_SRC}" x="10" y="12" width="140" height="140"
                  preserveAspectRatio="xMidYMid meet"
-                 opacity="${isEmpty ? '0.45' : '1'}"/>
+                 opacity="${isEmpty ? '0.82' : '1'}"/>
         </g>
 
         <!-- Crisp Outer Emblem Ring -->
-        <circle cx="80" cy="80" r="74" fill="none" stroke="${accent}" stroke-opacity="${ringAlpha}" stroke-width="${isEmpty ? '1.8' : '3.2'}"/>
+        <circle cx="80" cy="80" r="74" fill="none" stroke="${accent}" stroke-opacity="${ringAlpha}" stroke-width="${isEmpty ? '2' : '3.2'}"/>
       </svg>
     `;
   }
