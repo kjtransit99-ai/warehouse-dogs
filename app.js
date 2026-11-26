@@ -79,6 +79,7 @@
       nicknamePlaceholder: '例: タロウ',
       joinCrew: '入室する',
       roomFull: '満員です (最大8名)',
+      gameInProgress: 'ゲーム進行中（次のラウンドから参加可能）',
       standby: '作戦開始を待機中...',
       tapToReveal: 'タップして役職を表示',
       tapToHide: 'タップして隠す',
@@ -142,6 +143,7 @@
       nicknamePlaceholder: 'e.g. TARO',
       joinCrew: 'JOIN CREW',
       roomFull: 'ROOM IS FULL (MAX 8)',
+      gameInProgress: 'GAME IN PROGRESS (JOIN NEXT ROUND)',
       standby: 'STANDBY FOR MISSION...',
       tapToReveal: 'TAP TO REVEAL ROLE',
       tapToHide: 'TAP TO HIDE',
@@ -1175,6 +1177,13 @@
       }
 
       const data = snap.data();
+      if (data.phase && data.phase !== 'lobby') {
+        state.joinError = t('gameInProgress');
+        state.joining = false;
+        render();
+        return;
+      }
+
       const existingPlayers = Object.values(data.players || {});
       if (existingPlayers.length >= MAX_PLAYERS) {
         state.joinError = t('roomFull');
@@ -1208,6 +1217,14 @@
       state.playerId = pid;
       safeLocalSet('wd_pid_' + state.roomId, pid);
       safeLocalSet('wd_last_nickname', nickname);
+      // Optimistically reflect join locally to avoid flicker / duplicate submit before onSnapshot arrives
+      if (!state.room) {
+        state.room = data;
+      }
+      if (!state.room.players) {
+        state.room.players = {};
+      }
+      state.room.players[pid] = playerObj;
       state.joining = false;
       render();
     } catch (err) {
@@ -1275,6 +1292,8 @@
     return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
   }
 
+  let lastAutoTransitionKey = '';
+
   function startTimerLoop() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
@@ -1307,12 +1326,16 @@
         }
       }
 
-      // TV Auto-transition on 00:00
+      // TV Auto-transition on 00:00 (guarded so it fires strictly once per round+phase)
       if (state.mode === 'tv' && remaining <= 0) {
-        if (room.phase === 'questioning') {
-          triggerTimeout();
-        } else if (room.phase === 'discussion') {
-          startVote1();
+        const key = (room.roomId || '') + ':' + (room.round || 0) + ':' + room.phase + ':' + room.phaseEndTime;
+        if (lastAutoTransitionKey !== key) {
+          lastAutoTransitionKey = key;
+          if (room.phase === 'questioning') {
+            triggerTimeout();
+          } else if (room.phase === 'discussion') {
+            startVote1();
+          }
         }
       }
     }, 200);
@@ -1798,22 +1821,43 @@
 
     // Not yet joined (or kicked) -> show Nickname Join Form immediately
     if (!me) {
-      const existingInput = document.getElementById('nickname-input');
-      const prevValue = existingInput ? existingInput.value : '';
-      const wasFocused = existingInput && document.activeElement === existingInput;
+      const playerCount = room ? Object.keys(room.players || {}).length : 0;
+      const isFull = playerCount >= MAX_PLAYERS;
+      const isInProgress = Boolean(room && room.phase && room.phase !== 'lobby');
+      const isBlocked = isFull || isInProgress;
+      const btnText = isInProgress
+        ? t('gameInProgress')
+        : (isFull ? t('roomFull') : (state.joining ? '...' : t('joinCrew')));
+
+      const existingForm = document.getElementById('join-form');
+      if (existingForm) {
+        // Update in-place so mobile keyboard & Japanese IME composition are NEVER interrupted when others join
+        const lbl = document.getElementById('nickname-label');
+        const inp = document.getElementById('nickname-input');
+        const errEl = document.getElementById('join-error-box');
+        const btn = document.getElementById('join-submit-btn');
+        if (lbl) lbl.textContent = t('enterNickname');
+        if (inp) {
+          inp.placeholder = t('nicknamePlaceholder');
+          inp.disabled = isBlocked;
+        }
+        if (errEl) {
+          errEl.textContent = state.joinError || '';
+          errEl.classList.toggle('hidden', !state.joinError);
+        }
+        if (btn) {
+          btn.disabled = state.joining || isBlocked;
+          btn.textContent = btnText;
+        }
+        renderSyncToast();
+        return;
+      }
 
       app.innerHTML = renderPlayerJoin(room);
       const newInput = document.getElementById('nickname-input');
       if (newInput) {
-        if (prevValue) {
-          newInput.value = prevValue;
-        } else {
-          const savedNick = safeLocalGet('wd_last_nickname');
-          if (savedNick) newInput.value = savedNick;
-        }
-      }
-      if (newInput && wasFocused) {
-        newInput.focus();
+        const savedNick = safeLocalGet('wd_last_nickname');
+        if (savedNick) newInput.value = savedNick;
       }
       const form = document.getElementById('join-form');
       if (form) {
@@ -1881,19 +1925,24 @@
   function renderPlayerJoin(room) {
     const playerCount = room ? Object.keys(room.players || {}).length : 0;
     const isFull = playerCount >= MAX_PLAYERS;
+    const isInProgress = Boolean(room && room.phase && room.phase !== 'lobby');
+    const isBlocked = isFull || isInProgress;
+    const btnText = isInProgress
+      ? t('gameInProgress')
+      : (isFull ? t('roomFull') : (state.joining ? '...' : t('joinCrew')));
     return `
       <div class="player-shell" style="justify-content:center;">
         <div style="margin-bottom:8px;">${renderBrandLogo(true)}</div>
         <form id="join-form" class="player-card">
-          <label for="nickname-input" class="noir-heading" style="font-size:1.9rem;color:var(--yellow);">
+          <label id="nickname-label" for="nickname-input" class="noir-heading" style="font-size:1.9rem;color:var(--yellow);">
             ${t('enterNickname')}
           </label>
           <input id="nickname-input" class="player-input" type="text" maxlength="14"
                  autocomplete="off" autocorrect="off" required
-                 placeholder="${t('nicknamePlaceholder')}" ${isFull ? 'disabled' : ''}>
-          ${state.joinError ? `<div style="color:var(--red-bright);font-weight:900;font-size:1.15rem;">${escapeHtml(state.joinError)}</div>` : ''}
-          <button class="player-btn-full is-red" type="submit" ${state.joining || isFull ? 'disabled' : ''}>
-            ${isFull ? t('roomFull') : (state.joining ? '...' : t('joinCrew'))}
+                 placeholder="${t('nicknamePlaceholder')}" ${isBlocked ? 'disabled' : ''}>
+          <div id="join-error-box" class="${state.joinError ? '' : 'hidden'}" style="color:var(--red-bright);font-weight:900;font-size:1.15rem;">${escapeHtml(state.joinError)}</div>
+          <button id="join-submit-btn" class="player-btn-full is-red" type="submit" ${state.joining || isBlocked ? 'disabled' : ''}>
+            ${btnText}
           </button>
         </form>
       </div>
