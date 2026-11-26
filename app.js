@@ -474,95 +474,45 @@
   };
 
   /* =========================================================================
-     4. NOIR GANGSTER SIDE-PROFILE SVG SILHOUETTE (ZERO EMOJIS)
-        Slicked-back hair + angular Wellington sunglasses + sharp jawline +
-        3/4 black suit; ONLY backlit circle & skinny tie glow in codename color.
+     4. NOIR GANGSTER SIDE-PROFILE SILHOUETTE EMBLEM
+        Crisp Reservoir Dogs side-profile ink silhouette over a backlit
+        codename-colored spotlight disc (negative-space hair/eye/collar glow).
      ========================================================================= */
   let svgUidCounter = 0;
+  const GANGSTER_SILHOUETTE_SRC = 'assets/gangster-silhouette.png';
 
   function renderGangsterSVG(colorHex, isEmpty) {
     const uid = 'g' + (++svgUidCounter);
-    const glowColor = isEmpty ? '#3A3A3A' : colorHex;
-    const circleOpacity = isEmpty ? '0.25' : '0.92';
-    const tieColor = isEmpty ? '#2F2F2F' : colorHex;
-    const suitFill = isEmpty ? '#161616' : '#080808';
-    const rimStroke = isEmpty ? '#2A2A2A' : 'rgba(255,255,255,0.16)';
+    const accent = isEmpty ? '#3A3A40' : colorHex;
+    const ringAlpha = isEmpty ? '0.24' : '0.92';
 
     return `
       <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
         <defs>
-          <radialGradient id="bg-${uid}" cx="50%" cy="46%" r="50%">
-            <stop offset="0%" stop-color="${glowColor}" stop-opacity="${isEmpty ? '0.18' : '0.88'}"/>
-            <stop offset="68%" stop-color="${glowColor}" stop-opacity="${isEmpty ? '0.08' : '0.32'}"/>
-            <stop offset="100%" stop-color="${glowColor}" stop-opacity="0"/>
+          <radialGradient id="spot-${uid}" cx="46%" cy="44%" r="58%">
+            <stop offset="0%" stop-color="${isEmpty ? '#38383E' : '#FFFFFF'}" stop-opacity="${isEmpty ? '0.24' : '0.92'}"/>
+            <stop offset="32%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.22' : '0.95'}"/>
+            <stop offset="78%" stop-color="${accent}" stop-opacity="${isEmpty ? '0.12' : '0.68'}"/>
+            <stop offset="100%" stop-color="#09090B" stop-opacity="${isEmpty ? '0.88' : '0.55'}"/>
           </radialGradient>
-          <filter id="glow-${uid}" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3.2" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
-          <clipPath id="clip-${uid}">
-            <rect x="0" y="0" width="160" height="160" rx="4"/>
+          <clipPath id="badge-${uid}">
+            <circle cx="80" cy="80" r="74"/>
           </clipPath>
         </defs>
-        <g clip-path="url(#clip-${uid})">
-          <!-- Glowing Backlit Circle -->
-          <circle cx="80" cy="70" r="62" fill="url(#bg-${uid})" opacity="${circleOpacity}"/>
-          <circle cx="80" cy="70" r="46" fill="none" stroke="${glowColor}" stroke-opacity="${isEmpty ? '0.15' : '0.55'}" stroke-width="1.8"/>
 
-          <!-- 3/4 Angle Black Suit Shoulders & Torso -->
-          <path d="M18 162 L24 126 C28 113 44 107 62 103 L76 100 L108 104 C126 108 138 117 142 132 L146 162 Z"
-                fill="${suitFill}" stroke="${rimStroke}" stroke-width="1.2"/>
+        <!-- Glowing Codename Spotlight Disc -->
+        <circle cx="80" cy="80" r="74" fill="#0B0B0D"/>
+        <circle cx="80" cy="80" r="74" fill="url(#spot-${uid})"/>
 
-          <!-- Crisp White Shirt Collar V -->
-          <polygon points="73,103 99,105 90,144 76,126" fill="${isEmpty ? '#262626' : '#ECE9E2'}"/>
-
-          <!-- Suit Lapels (Hardboiled Sharp Cut) -->
-          <polygon points="56,105 74,103 86,144 64,136" fill="${suitFill}" stroke="${rimStroke}" stroke-width="1"/>
-          <polygon points="111,106 98,105 90,144 106,136" fill="${suitFill}" stroke="${rimStroke}" stroke-width="1"/>
-
-          <!-- Glowing Skinny Tie -->
-          <g ${isEmpty ? '' : `filter="url(#glow-${uid})"`}>
-            <polygon points="82,107 93,108 90,115 84,115" fill="${tieColor}"/>
-            <polygon points="84,115 90,115 93,158 88,162 82,158" fill="${tieColor}"/>
-          </g>
-
-          <!-- Neck -->
-          <path d="M62 88 L64 108 L92 109 L91 92 Z" fill="${suitFill}"/>
-
-          <!-- Head & Slicked-Back Hair (3/4 Side Profile Facing Right) -->
-          <path d="
-            M56 76
-            C51 64 51 44 60 32
-            C69 21 88 20 101 26
-            C107 29 109 35 106 40
-            L108 49
-            L115 62
-            L109 65
-            L110 71
-            L107 74
-            L108 79
-            C106 85 101 91 92 94
-            L75 96
-            C64 95 59 87 56 76 Z"
-            fill="${suitFill}" stroke="${rimStroke}" stroke-width="1.1"/>
-
-          <!-- Slicked-back Hair Pompadour Sweep Detail -->
-          <path d="M57 44 C64 31 85 25 102 30 C91 32 75 37 64 47 Z"
-                fill="rgba(255,255,255,${isEmpty ? '0.04' : '0.13'})"/>
-
-          <!-- Ear Notch -->
-          <path d="M62 63 C58 63 57 70 61 73" fill="none" stroke="${rimStroke}" stroke-width="1.4"/>
-
-          <!-- Angular Wellington Sunglasses (3/4 Profile) -->
-          <polygon points="73,53 111,51 112,56 108,64 93,64 89,57 73,57"
-                   fill="#030303" stroke="${isEmpty ? '#333' : '#666'}" stroke-width="1"/>
-          <!-- Specular Lens Glint -->
-          <polygon points="94,54 101,53 98,62 93,62" fill="rgba(255,255,255,${isEmpty ? '0.05' : '0.26'})"/>
-          <line x1="63" y1="59" x2="75" y2="55" stroke="${isEmpty ? '#2A2A2A' : '#555'}" stroke-width="2.2"/>
+        <!-- Crisp Noir Side-Profile Silhouette -->
+        <g clip-path="url(#badge-${uid})">
+          <image href="${GANGSTER_SILHOUETTE_SRC}" x="10" y="12" width="140" height="140"
+                 preserveAspectRatio="xMidYMid meet"
+                 opacity="${isEmpty ? '0.45' : '1'}"/>
         </g>
+
+        <!-- Crisp Outer Emblem Ring -->
+        <circle cx="80" cy="80" r="74" fill="none" stroke="${accent}" stroke-opacity="${ringAlpha}" stroke-width="${isEmpty ? '1.8' : '3.2'}"/>
       </svg>
     `;
   }
@@ -1906,7 +1856,7 @@
           ${renderBrandLogo(true)}
         </div>
         ${phase !== 'lobby' ? `
-          <div style="display:flex;align-items:center;gap:12px;background:#161616;border:2px solid #2E2E2E;padding:10px 14px;">
+          <div style="display:flex;align-items:center;gap:12px;background:rgba(16,15,14,0.68);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);border:2px solid rgba(255,255,255,0.16);padding:10px 14px;">
             <div style="width:46px;height:46px;flex-shrink:0;">${renderGangsterSVG(myCode.color, false)}</div>
             <div style="min-width:0;">
               <div style="font-family:var(--font-display);font-size:1.3rem;color:${myCode.color};line-height:1;">${myCode.label}</div>
